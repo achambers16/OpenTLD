@@ -43,7 +43,7 @@ public:
     bool enabled;
 
     //Configurable members
-    int numTrees;
+    int numFerns;
     int numFeatures;
 
     int imgWidthStep;

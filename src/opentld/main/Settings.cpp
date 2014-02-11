@@ -53,7 +53,7 @@ Settings::Settings() :
     m_minScale(-10),
     m_maxScale(10),
     m_numFeatures(10),
-    m_numTrees(10),
+    m_numFerns(10),
     m_thetaP(0.65),
     m_thetaN(0.5),
     m_minSize(25),

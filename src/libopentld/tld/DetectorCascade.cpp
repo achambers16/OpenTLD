@@ -52,7 +52,7 @@ DetectorCascade::DetectorCascade()
     minSize = 25;
     imgWidthStep = -1;
 
-    numTrees = 13;
+    numFerns = 13;
     numFeatures = 10;
 
     initialised = false;
@@ -78,11 +78,12 @@ DetectorCascade::~DetectorCascade()
     delete clustering;
 }
 
+// Called once for each new template (bounding box) selected
 void DetectorCascade::init()
 {
     if(imgWidth == -1 || imgHeight == -1 || imgWidthStep == -1 || objWidth == -1 || objHeight == -1)
     {
-        //printf("Error: Window dimensions not set\n"); //TODO: Convert this to exception
+        printf("Error: Window dimensions not set\n"); //TODO: Convert this to exception
     }
 
     initWindowsAndScales();
@@ -98,7 +99,7 @@ void DetectorCascade::init()
 //TODO: This is error-prone. Better give components a reference to DetectorCascade?
 void DetectorCascade::propagateMembers()
 {
-    detectionResult->init(numWindows, numTrees);
+    detectionResult->init(numWindows, numFerns);
 
     varianceFilter->windowOffsets = windowOffsets;
     ensembleClassifier->windowOffsets = windowOffsets;
@@ -106,7 +107,7 @@ void DetectorCascade::propagateMembers()
     ensembleClassifier->numScales = numScales;
     ensembleClassifier->scales = scales;
     ensembleClassifier->numFeatures = numFeatures;
-    ensembleClassifier->numTrees = numTrees;
+    ensembleClassifier->numFerns = numFerns;
     nnClassifier->windows = windows;
     clustering->windows = windows;
     clustering->numWindows = numWindows;
@@ -263,7 +264,7 @@ void DetectorCascade::initWindowOffsets()
         *off++ = sub2idx(window[0] - 1, window[1] + window[3] - 1, imgWidthStep); // x1-1,y2
         *off++ = sub2idx(window[0] + window[2] - 1, window[1] - 1, imgWidthStep); // x2,y1-1
         *off++ = sub2idx(window[0] + window[2] - 1, window[1] + window[3] - 1, imgWidthStep); // x2,y2
-        *off++ = window[4] * 2 * numFeatures * numTrees; // pointer to features for this scale
+        *off++ = window[4] * 2 * numFeatures * numFerns; // pointer to features for this scale
         *off++ = window[2] * window[3]; //Area of bounding box
     }
 }
@@ -280,7 +281,7 @@ void DetectorCascade::detect(const Mat &img)
     }
 
     //Prepare components
-    foregroundDetector->nextIteration(img); //Calculates foreground
+//    foregroundDetector->nextIteration(img); //Calculates foreground
     varianceFilter->nextIteration(img); //Calculates integral images
     ensembleClassifier->nextIteration(img);
 
@@ -291,28 +292,28 @@ void DetectorCascade::detect(const Mat &img)
 
         int *window = &windows[TLD_WINDOW_SIZE * i];
 
-        if(foregroundDetector->isActive())
-        {
-            bool isInside = false;
-
-            for(size_t j = 0; j < detectionResult->fgList->size(); j++)
-            {
-
-                int bgBox[4];
-                tldRectToArray(detectionResult->fgList->at(j), bgBox);
-
-                if(tldIsInside(window, bgBox))  //TODO: This is inefficient and should be replaced by a quadtree
-                {
-                    isInside = true;
-                }
-            }
-
-            if(!isInside)
-            {
-                detectionResult->posteriors[i] = 0;
-                continue;
-            }
-        }
+//        if(foregroundDetector->isActive())
+//        {
+//            bool isInside = false;
+//
+//            for(size_t j = 0; j < detectionResult->fgList->size(); j++)
+//            {
+//
+//                int bgBox[4];
+//                tldRectToArray(detectionResult->fgList->at(j), bgBox);
+//
+//                if(tldIsInside(window, bgBox))  //TODO: This is inefficient and should be replaced by a quadtree
+//                {
+//                    isInside = true;
+//                }
+//            }
+//
+//            if(!isInside)
+//            {
+//                detectionResult->posteriors[i] = 0;
+//                continue;
+//            }
+//        }
 
         if(!varianceFilter->filter(i))
         {

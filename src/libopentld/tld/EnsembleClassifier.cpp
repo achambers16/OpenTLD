@@ -49,7 +49,7 @@ EnsembleClassifier::EnsembleClassifier() :
     positives(NULL),
     negatives(NULL)
 {
-    numTrees = 10;
+    numFerns = 10;
     numFeatures = 13;
     enabled = true;
 }
@@ -88,7 +88,7 @@ void EnsembleClassifier::release()
  */
 void EnsembleClassifier::initFeatureLocations()
 {
-    int size = 2 * 2 * numFeatures * numTrees;
+    int size = 2 * 2 * numFeatures * numFerns;
 
     features = new float[size];
 
@@ -105,14 +105,14 @@ void EnsembleClassifier::initFeatureLocations()
 void EnsembleClassifier::initFeatureOffsets()
 {
 
-    featureOffsets = new int[numScales * numTrees * numFeatures * 2];
+    featureOffsets = new int[numScales * numFerns * numFeatures * 2];
     int *off = featureOffsets;
 
     for(int k = 0; k < numScales; k++)
     {
         Size scale = scales[k];
 
-        for(int i = 0; i < numTrees; i++)
+        for(int i = 0; i < numFerns; i++)
         {
             for(int j = 0; j < numFeatures; j++)
             {
@@ -127,11 +127,11 @@ void EnsembleClassifier::initFeatureOffsets()
 
 void EnsembleClassifier::initPosteriors()
 {
-    posteriors = new float[numTrees * numIndices];
-    positives = new int[numTrees * numIndices];
-    negatives = new int[numTrees * numIndices];
+    posteriors = new float[numFerns * numIndices];
+    positives = new int[numFerns * numIndices];
+    negatives = new int[numFerns * numIndices];
 
-    for(int i = 0; i < numTrees; i++)
+    for(int i = 0; i < numFerns; i++)
     {
         for(int j = 0; j < numIndices; j++)
         {
@@ -150,12 +150,12 @@ void EnsembleClassifier::nextIteration(const Mat &img)
 }
 
 //Classical fern algorithm
-int EnsembleClassifier::calcFernFeature(int windowIdx, int treeIdx)
+int EnsembleClassifier::calcFernFeature(int windowIdx, int fernIdx)
 {
 
     int index = 0;
     int *bbox = windowOffsets + windowIdx * TLD_WINDOW_OFFSET_SIZE;
-    int *off = featureOffsets + bbox[4] + treeIdx * 2 * numFeatures; //bbox[4] is pointer to features for the current scale
+    int *off = featureOffsets + bbox[4] + fernIdx * 2 * numFeatures; //bbox[4] is pointer to features for the current scale
 
     for(int i = 0; i < numFeatures; i++)
     {
@@ -164,6 +164,7 @@ int EnsembleClassifier::calcFernFeature(int windowIdx, int treeIdx)
         int fp0 = img[bbox[0] + off[0]];
         int fp1 = img[bbox[0] + off[1]];
 
+        // Check if feature point 0 is brighter than feature point 1
         if(fp0 > fp1)
         {
             index |= 1;
@@ -177,7 +178,7 @@ int EnsembleClassifier::calcFernFeature(int windowIdx, int treeIdx)
 
 void EnsembleClassifier::calcFeatureVector(int windowIdx, int *featureVector)
 {
-    for(int i = 0; i < numTrees; i++)
+    for(int i = 0; i < numFerns; i++)
     {
         featureVector[i] = calcFernFeature(windowIdx, i);
     }
@@ -187,7 +188,7 @@ float EnsembleClassifier::calcConfidence(int *featureVector)
 {
     float conf = 0.0;
 
-    for(int i = 0; i < numTrees; i++)
+    for(int i = 0; i < numFerns; i++)
     {
         conf += posteriors[i * numIndices + featureVector[i]];
     }
@@ -197,7 +198,7 @@ float EnsembleClassifier::calcConfidence(int *featureVector)
 
 void EnsembleClassifier::classifyWindow(int windowIdx)
 {
-    int *featureVector = detectionResult->featureVectors + numTrees * windowIdx;
+    int *featureVector = detectionResult->featureVectors + numFerns * windowIdx;
     calcFeatureVector(windowIdx, featureVector);
 
     detectionResult->posteriors[windowIdx] = calcConfidence(featureVector);
@@ -205,18 +206,20 @@ void EnsembleClassifier::classifyWindow(int windowIdx)
 
 bool EnsembleClassifier::filter(int i)
 {
+	// If not enabled, return immediately with a pass
     if(!enabled) return true;
 
     classifyWindow(i);
 
+    // If less that 50% chance, fail this window
     if(detectionResult->posteriors[i] < 0.5) return false;
 
     return true;
 }
 
-void EnsembleClassifier::updatePosterior(int treeIdx, int idx, int positive, int amount)
+void EnsembleClassifier::updatePosterior(int fernIdx, int idx, int positive, int amount)
 {
-    int arrayIndex = treeIdx * numIndices + idx;
+    int arrayIndex = fernIdx * numIndices + idx;
     (positive) ? positives[arrayIndex] += amount : negatives[arrayIndex] += amount;
     posteriors[arrayIndex] = ((float) positives[arrayIndex]) / (positives[arrayIndex] + negatives[arrayIndex]) / 10.0;
 }
@@ -224,7 +227,7 @@ void EnsembleClassifier::updatePosterior(int treeIdx, int idx, int positive, int
 void EnsembleClassifier::updatePosteriors(int *featureVector, int positive, int amount)
 {
 
-    for(int i = 0; i < numTrees; i++)
+    for(int i = 0; i < numFerns; i++)
     {
 
         int idx = featureVector[i];

@@ -291,7 +291,7 @@ void TLD::initialLearning()
         int idx = positiveIndices.at(i).first;
         //Learn this bounding box
         //TODO: Somewhere here image warping might be possible
-        detectorCascade->ensembleClassifier->learn(&detectorCascade->windows[TLD_WINDOW_SIZE * idx], true, &detectionResult->featureVectors[detectorCascade->numTrees * idx]);
+        detectorCascade->ensembleClassifier->learn(&detectorCascade->windows[TLD_WINDOW_SIZE * idx], true, &detectionResult->featureVectors[detectorCascade->numFerns * idx]);
     }
 
     srand(1); //TODO: This is not guaranteed to affect random_shuffle
@@ -386,7 +386,7 @@ void TLD::learn()
     {
         int idx = negativeIndices.at(i);
         //TODO: Somewhere here image warping might be possible
-        detectorCascade->ensembleClassifier->learn(&detectorCascade->windows[TLD_WINDOW_SIZE * idx], false, &detectionResult->featureVectors[detectorCascade->numTrees * idx]);
+        detectorCascade->ensembleClassifier->learn(&detectorCascade->windows[TLD_WINDOW_SIZE * idx], false, &detectionResult->featureVectors[detectorCascade->numFerns * idx]);
     }
 
     //TODO: Randomization might be a good idea
@@ -394,7 +394,7 @@ void TLD::learn()
     {
         int idx = positiveIndices.at(i).first;
         //TODO: Somewhere here image warping might be possible
-        detectorCascade->ensembleClassifier->learn(&detectorCascade->windows[TLD_WINDOW_SIZE * idx], true, &detectionResult->featureVectors[detectorCascade->numTrees * idx]);
+        detectorCascade->ensembleClassifier->learn(&detectorCascade->windows[TLD_WINDOW_SIZE * idx], true, &detectionResult->featureVectors[detectorCascade->numFerns * idx]);
     }
 
     for(size_t i = 0; i < negativeIndicesForNN.size(); i++)
@@ -431,7 +431,7 @@ void TLD::writeToFile(const char *path)
     fprintf(file, "%d #width\n", detectorCascade->objWidth);
     fprintf(file, "%d #height\n", detectorCascade->objHeight);
     fprintf(file, "%f #min_var\n", detectorCascade->varianceFilter->minVar);
-    fprintf(file, "%d #Positive Sample Size\n", nn->truePositives->size());
+    fprintf(file, "%zu #Positive Sample Size\n", nn->truePositives->size());
 
 
 
@@ -450,7 +450,7 @@ void TLD::writeToFile(const char *path)
         }
     }
 
-    fprintf(file, "%d #Negative Sample Size\n", nn->falsePositives->size());
+    fprintf(file, "%lu #Negative Sample Size\n", nn->falsePositives->size());
 
     for(size_t s = 0; s < nn->falsePositives->size(); s++)
     {
@@ -467,12 +467,12 @@ void TLD::writeToFile(const char *path)
         }
     }
 
-    fprintf(file, "%d #numtrees\n", ec->numTrees);
-    detectorCascade->numTrees = ec->numTrees;
+    fprintf(file, "%d #numFerns\n", ec->numFerns);
+    detectorCascade->numFerns = ec->numFerns;
     fprintf(file, "%d #numFeatures\n", ec->numFeatures);
     detectorCascade->numFeatures = ec->numFeatures;
 
-    for(int i = 0; i < ec->numTrees; i++)
+    for(int i = 0; i < ec->numFerns; i++)
     {
         fprintf(file, "#Tree %d\n", i);
 
@@ -499,7 +499,7 @@ void TLD::writeToFile(const char *path)
             }
         }
 
-        fprintf(file, "%d #numLeaves\n", list.size());
+        fprintf(file, "%zu #numLeaves\n", list.size());
 
         for(size_t j = 0; j < list.size(); j++)
         {
@@ -603,20 +603,20 @@ void TLD::readFromFile(const char *path)
         nn->falsePositives->push_back(patch);
     }
 
-    fscanf(file, "%d \n", &ec->numTrees);
-    detectorCascade->numTrees = ec->numTrees;
+    fscanf(file, "%d \n", &ec->numFerns);
+    detectorCascade->numFerns = ec->numFerns;
     fgets(str_buf, MAX_LEN, file); /*Skip rest of line*/
 
     fscanf(file, "%d \n", &ec->numFeatures);
     detectorCascade->numFeatures = ec->numFeatures;
     fgets(str_buf, MAX_LEN, file); /*Skip rest of line*/
 
-    int size = 2 * 2 * ec->numFeatures * ec->numTrees;
+    int size = 2 * 2 * ec->numFeatures * ec->numFerns;
     ec->features = new float[size];
     ec->numIndices = pow(2.0f, ec->numFeatures);
     ec->initPosteriors();
 
-    for(int i = 0; i < ec->numTrees; i++)
+    for(int i = 0; i < ec->numFerns; i++)
     {
         fgets(str_buf, MAX_LEN, file); /*Skip line*/
 

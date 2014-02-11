@@ -66,7 +66,7 @@ public:
     int m_minScale; //!< number of scales smaller than initial object size
     int m_maxScale; //!< number of scales larger than initial object size
     int m_numFeatures; //!< number of features
-    int m_numTrees; //!< number of trees
+    int m_numFerns; //!< number of ferns
     float m_thetaP;
     float m_thetaN;
     int m_seed;

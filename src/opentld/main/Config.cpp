@@ -323,8 +323,8 @@ int Config::init(int argc, char **argv)
         // minSize
         m_cfg.lookupValue("detector.minSize", m_settings.m_minSize);
 
-        // numTrees
-        m_cfg.lookupValue("detector.numTrees", m_settings.m_numTrees);
+        // numFerns
+        m_cfg.lookupValue("detector.numFerns", m_settings.m_numFerns);
 
         // numFeatures
         m_cfg.lookupValue("detector.numFeatures", m_settings.m_numFeatures);
@@ -477,7 +477,7 @@ int Config::configure(Main *main)
     detectorCascade->minScale = m_settings.m_minScale;
     detectorCascade->maxScale = m_settings.m_maxScale;
     detectorCascade->minSize = m_settings.m_minSize;
-    detectorCascade->numTrees = m_settings.m_numTrees;
+    detectorCascade->numFerns = m_settings.m_numFerns;
     detectorCascade->numFeatures = m_settings.m_numFeatures;
     detectorCascade->nnClassifier->thetaTP = m_settings.m_thetaP;
     detectorCascade->nnClassifier->thetaFP = m_settings.m_thetaN;

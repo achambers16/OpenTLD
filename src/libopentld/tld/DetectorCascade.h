@@ -54,7 +54,7 @@ public:
     float shift;
     int minSize;
     int numFeatures;
-    int numTrees;
+    int numFerns;
 
     //Needed for init
     int imgWidth;
