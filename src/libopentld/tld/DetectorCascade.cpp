@@ -315,12 +315,15 @@ void DetectorCascade::detect(const Mat &img)
 //            }
 //        }
 
+/*
         if(!varianceFilter->filter(i))
         {
             detectionResult->posteriors[i] = 0;
             continue;
         }
+*/
 
+assert(0);
         if(!ensembleClassifier->filter(i))
         {
             continue;
